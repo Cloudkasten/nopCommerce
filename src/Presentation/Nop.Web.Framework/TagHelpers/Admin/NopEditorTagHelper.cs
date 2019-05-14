@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -21,6 +22,7 @@ namespace Nop.Web.Framework.TagHelpers.Admin
         private const string RenderFormControlClassAttributeName = "asp-render-form-control-class";
         private const string TemplateAttributeName = "asp-template";
         private const string PostfixAttributeName = "asp-postfix";
+        private const string ValueAttributeName = "asp-value";
 
         private readonly IHtmlHelper _htmlHelper;
 
@@ -61,6 +63,12 @@ namespace Nop.Web.Framework.TagHelpers.Admin
         public string Postfix { set; get; }
 
         /// <summary>
+        /// The value of the element
+        /// </summary>
+        [HtmlAttributeName(ValueAttributeName)]
+        public string Value { set; get; }
+
+        /// <summary>
         /// ViewContext
         /// </summary>
         [HtmlAttributeNotBound]
@@ -96,12 +104,18 @@ namespace Nop.Web.Framework.TagHelpers.Admin
             //clear the output
             output.SuppressOutput();
 
+            //container for additional attributes
+            var htmlAttributes = new Dictionary<string, object>();
+
+            //set value if exists
+            if (!string.IsNullOrEmpty(Value))
+                htmlAttributes.Add("value", Value);
+
             //disabled attribute
             bool.TryParse(IsDisabled, out bool disabled);
             if (disabled)
             {
-                var d = new TagHelperAttribute("disabled", "disabled");
-                output.Attributes.Add(d);
+                htmlAttributes.Add("disabled", "disabled");
             }
 
             //required asterisk
@@ -118,10 +132,9 @@ namespace Nop.Web.Framework.TagHelpers.Admin
 
             //add form-control class
             bool.TryParse(RenderFormControlClass, out bool renderFormControlClass);
-            object htmlAttributes = null;
             if (string.IsNullOrEmpty(RenderFormControlClass) && For.Metadata.ModelType.Name.Equals("String") || renderFormControlClass)
-                htmlAttributes = new {@class = "form-control"};
-            
+                htmlAttributes.Add("class", "form-control");
+
             //generate editor
 
             //we have to invoke strong typed "EditorFor" method of HtmlHelper<TModel>
@@ -144,7 +157,7 @@ namespace Nop.Web.Framework.TagHelpers.Admin
                 For.Name,
                 Template,
                 readOnly: false,
-                additionalViewData: new { htmlAttributes, postfix = this.Postfix });
+                additionalViewData: new { htmlAttributes, postfix = Postfix });
 
             var htmlOutput = templateBuilder.Build();
             output.Content.SetHtmlContent(htmlOutput.RenderHtmlContent());
